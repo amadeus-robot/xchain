@@ -17,10 +17,13 @@ describe("L1StateLightClient", function () {
   });
 
   describe("setTrustedVersionedHash", function () {
-    it("Should set the trusted versioned hash", async function () {
+    it("Should set the trusted versioned hash and show gas used", async function () {
       const { client } = await deployFixture();
       const vh = hre.ethers.keccak256(hre.ethers.toUtf8Bytes("header1"));
-      await client.setTrustedVersionedHash(vh);
+      const tx = await client.setTrustedVersionedHash(vh);
+      const receipt = await tx.wait();
+      console.log("setTrustedVersionedHash gas used:", receipt.gasUsed.toString());
+
       expect(await client.trustedVH()).to.equal(vh);
     });
   });
@@ -38,7 +41,7 @@ describe("L1StateLightClient", function () {
       const wrongVH = hre.ethers.keccak256(hre.ethers.toUtf8Bytes("wrong"));
       await client.setTrustedVersionedHash(trustedVH);
 
-      const rest = "22".repeat(160); 
+      const rest = "22".repeat(160);
       const payload = wrongVH + rest;
       await expect(client.proveKV(payload)).to.be.revertedWith("wrong header");
     });
@@ -46,14 +49,21 @@ describe("L1StateLightClient", function () {
     it("Should return false (mocked) if trustedVH matches but precompile staticcall returns false", async function () {
       const { client } = await deployFixture();
       const trustedVH = hre.ethers.keccak256(hre.ethers.toUtf8Bytes("trusted"));
-      await client.setTrustedVersionedHash(trustedVH);
+      const setTx = await client.setTrustedVersionedHash(trustedVH);
+      const setReceipt = await setTx.wait();
+      console.log("setTrustedVersionedHash gas used:", setReceipt.gasUsed.toString());
+
       const payload = trustedVH + "33".repeat(160);
 
       try {
+        const tx = await client.proveKV(payload);
+        const receipt = await tx.wait();
+        console.log("⛽ proveKV gas used:", receipt.gasUsed.toString());
+
         const ok = await client.proveKV(payload);
         expect(ok).to.be.false;
-      } catch {
-        
+      } catch (err) {
+        console.log("⚠️  proveKV reverted (mocked precompile).");
       }
     });
   });
