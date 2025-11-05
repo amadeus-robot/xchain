@@ -9,4 +9,5 @@ npx hardhat help
 npx hardhat test
 npx hardhat node
 npx hardhat ignition deploy ./ignition/modules/L1StateLightClient.ts
+npx hardhat ignition deploy ./ignition/modules/Bls12381Verifier.ts
 ```
