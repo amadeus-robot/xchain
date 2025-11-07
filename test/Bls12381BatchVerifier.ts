@@ -99,13 +99,12 @@ describe("Bls12381BatchVerifier", function () {
       const pk = validBytes + validBytes.slice(2) + validBytes.slice(2) + validBytes.slice(2); // 256 bytes
 
       try {
-        const tx = await batchVerifier.verifyBatch(
+        const result = await batchVerifier.verifyBatch(
           [sig, sig, sig], // 3 signatures
           [hash, hash, hash], // 3 hashes
           [pk, pk, pk] // 3 public keys
         );
-        const receipt = await tx.wait();
-        console.log("⛽ verifyBatch (3 sigs) gas used:", receipt?.gasUsed?.toString() || "N/A");
+        console.log("⛽ verifyBatch (3 sigs) result:", result);
       } catch (err) {
         console.log("⚠️  verifyBatch reverted (mocked precompile or invalid crypto values).");
       }
@@ -202,14 +201,13 @@ describe("Bls12381BatchVerifier", function () {
       const pk = validBytes + validBytes.slice(2) + validBytes.slice(2) + validBytes.slice(2); // 256 bytes
 
       try {
-        const tx = await batchVerifier.verifyAggregated(
+        const result = await batchVerifier.verifyAggregated(
           validBytes,
           validBytes,
           [hash, hash, hash], // 3 messages
           [pk, pk, pk] // 3 public keys
         );
-        const receipt = await tx.wait();
-        console.log("⛽ verifyAggregated (3 msgs) gas used:", receipt?.gasUsed?.toString() || "N/A");
+        console.log("⛽ verifyAggregated (3 msgs) result:", result);
       } catch (err) {
         console.log("⚠️  verifyAggregated reverted (mocked precompile or invalid crypto values).");
       }

@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@noble/curves": "^2.0.1",
     "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
     "@nomicfoundation/hardhat-ethers": "^3.1.2",
     "@nomicfoundation/hardhat-ignition": "^0.15.15",
@@ -26,6 +27,7 @@
     "ethers": "^6.15.0",
     "hardhat": "^2.26.5",
     "hardhat-gas-reporter": "^2.3.0",
+    "kzg-wasm": "^1.0.0",
     "solidity-coverage": "^0.8.16",
     "ts-node": "^10.9.2",
     "typechain": "^8.3.2",
