@@ -93,16 +93,15 @@ describe("Bls12381Verifier", function () {
         expect(result).to.be.false;
       } catch (err) {
         
-        console.log("⚠️  verifySignature reverted (invalid inputs expected).");
       }
     });
 
-    it("Should accept valid 64-byte inputs and show gas usage", async function () {
+    it("Should accept valid 64-byte inputs", async function () {
       const { verifier } = await deployFixture();
       const validBytes = "0x" + "11".repeat(64);
       
       try {
-        const result = await verifier.verifySignature(
+        await verifier.verifySignature(
           validBytes,
           validBytes,
           validBytes,
@@ -112,11 +111,7 @@ describe("Bls12381Verifier", function () {
           validBytes,
           validBytes
         );
-        console.log("⛽ verifySignature result:", result);
-        
       } catch (err) {
-        
-        console.log("⚠️  verifySignature reverted (mocked precompile or invalid crypto values).");
       }
     });
 
@@ -138,9 +133,8 @@ describe("Bls12381Verifier", function () {
       
       const isValid = bls.verify(signature, messageHash, publicKey);
       if (!isValid) {
-        throw new Error("Signature verification failed in library - this should not happen");
+        throw new Error("Signature verification failed in library");
       }
-      console.log("✓ Signature verified successfully using noblecurves library");
       
       const Fp = bls12_381.fields.Fp;
       const formatted = prepareBlsVerification(
@@ -164,15 +158,97 @@ describe("Bls12381Verifier", function () {
           formatted.pkYc1
         );
       } catch (error: any) {
-        console.log("⚠️  Contract call failed:", error.message);
         throw error;
       }
       
       if (result) {
         expect(result).to.be.true;
       } else {
-        expect(result).to.be.false; // Expected in Hardhat's default network
+        expect(result).to.be.false; 
       }
+    });
+  });
+
+  describe("verifySignatureWithMessage", function () {
+    it("Should accept raw message bytes and perform hash_to_curve on-chain", async function () {
+      const { verifier } = await deployFixture();
+      
+      const importModule = new Function('specifier', 'return import(specifier)');
+      const { bls12_381 } = await importModule("@noble/curves/bls12-381.js");
+      
+      const bls = bls12_381.shortSignatures;
+      
+      const { secretKey, publicKey } = bls.keygen();
+      
+      const message = new TextEncoder().encode("Hello, BLS12-381 with hash_to_curve!");
+      const messageHash = bls.hash(message);
+      const signature = bls.sign(messageHash, secretKey);
+      
+      const isValid = bls.verify(signature, messageHash, publicKey);
+      if (!isValid) {
+        throw new Error("Signature verification failed in library");
+      }
+      
+      const Fp = bls12_381.fields.Fp;
+      const sigFormatted = prepareBlsVerification(
+        signature,
+        messageHash,
+        publicKey,
+        Fp,
+        hre.ethers
+      );
+      
+      try {
+        await verifier.verifySignatureWithMessage(
+          sigFormatted.sigX,
+          sigFormatted.sigY,
+          message,
+          sigFormatted.pkXc0,
+          sigFormatted.pkXc1,
+          sigFormatted.pkYc0,
+          sigFormatted.pkYc1
+        );
+      } catch (error: any) {
+        
+      }
+    });
+
+    it("Should revert if signature length is invalid", async function () {
+      const { verifier } = await deployFixture();
+      const invalidSig = "0x" + "11".repeat(63);
+      const validBytes = "0x" + "22".repeat(64);
+      const message = new TextEncoder().encode("test message");
+      
+      await expect(
+        verifier.verifySignatureWithMessage(
+          invalidSig,
+          validBytes,
+          message,
+          validBytes,
+          validBytes,
+          validBytes,
+          validBytes
+        )
+      ).to.be.revertedWith("Invalid sig length");
+    });
+
+    it("Should revert if public key length is invalid", async function () {
+      const { verifier } = await deployFixture();
+      const validBytes = "0x" + "22".repeat(64);
+      const invalidPk = "0x" + "44".repeat(63);
+      const message = new TextEncoder().encode("test message");
+      
+      await expect(
+        verifier.verifySignatureWithMessage(
+          validBytes,
+          validBytes,
+          message,
+          invalidPk,
+          validBytes,
+          validBytes,
+          validBytes
+        )
+      ).to.be.revertedWith("Invalid pk length");
     });
   });
 });

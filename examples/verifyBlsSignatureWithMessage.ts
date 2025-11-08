@@ -7,7 +7,7 @@ async function main() {
   
   const bls = bls12_381.shortSignatures;
   const { secretKey, publicKey } = bls.keygen();
-  const message = new TextEncoder().encode("Hello, BLS12-381!");
+  const message = new TextEncoder().encode("Hello, BLS12-381 with on-chain hash_to_curve!");
   const messageHash = bls.hash(message);
   const signature = bls.sign(messageHash, secretKey);
   
@@ -29,18 +29,36 @@ async function main() {
   const verifier = await Bls12381Verifier.deploy();
   await verifier.waitForDeployment();
   
-  const result = await verifier.verifySignature(
-    formatted.sigX,
-    formatted.sigY,
-    formatted.hX,
-    formatted.hY,
-    formatted.pkXc0,
-    formatted.pkXc1,
-    formatted.pkYc0,
-    formatted.pkYc1
-  );
+  try {
+    const result = await verifier.verifySignatureWithMessage(
+      formatted.sigX,
+      formatted.sigY,
+      message,
+      formatted.pkXc0,
+      formatted.pkXc1,
+      formatted.pkYc0,
+      formatted.pkYc1
+    );
+    console.log(result);
+  } catch (error: any) {
+    console.error(error.message);
+  }
   
-  console.log("Result:", result);
+  try {
+    const resultOffChain = await verifier.verifySignature(
+      formatted.sigX,
+      formatted.sigY,
+      formatted.hX,
+      formatted.hY,
+      formatted.pkXc0,
+      formatted.pkXc1,
+      formatted.pkYc0,
+      formatted.pkYc1
+    );
+    console.log(resultOffChain);
+  } catch (error: any) {
+    console.error(error.message);
+  }
 }
 
 main()
