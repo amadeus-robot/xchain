@@ -2,7 +2,7 @@ function fpToLimbStruct(fp: bigint) {
   const hex = fp.toString(16).padStart(96, '0'); // 381 bits ≈ 48 bytes, but we pad for clarity
   const lo = "0x" + hex.slice(-64);   // lower 256 bits
   const hi = "0x" + hex.slice(0, hex.length - 64).padStart(64, '0'); // upper bits
-  return [hi, lo];
+  return [lo, hi];
 }
 
 export const  g1ToStruct = (P) => {

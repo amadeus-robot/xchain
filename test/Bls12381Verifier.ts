@@ -17,32 +17,31 @@ describe("BLSVerify", function () {
     const { secretKey, publicKey } = blsl.keygen();
     const msgp = blsl.hash(message);
     const msgpd = blsl.hash(message, 'AMADEUS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_');
-    console.log("Message:", msgp);
     const signature = blsl.sign(msgp, secretKey);
-    
-    const sigPoint = bls.G2.Point.fromHex(signature.toHex());
-    const pubPoint = bls.G1.Point.fromHex(publicKey.toHex());
-
-    console.log("Signature Point:", sigPoint);
-    console.log("Public Key Point:", pubPoint);
-
-    const sigStruct = g2ToStruct(sigPoint);
-    const pubStruct = g1ToStruct(pubPoint);
-
-    console.log("Signature Struct:", sigStruct);
-    console.log("Public Key Struct:", pubStruct);
-
-    // Now convert points to Solidity struct format
-    // NOTE: Your Solidity contract expects:
-    //   - signature in G2Point
-    //   - pubkey in G1Point
-    //
-    // For simplicity, we’ll just check the pairing via contract,
-    // but full G1/G2 decompositions would require splitting X/Y coordinates.
-
-    // If you’ve added helper methods to convert these, you can do:
-
+    const sigStruct = g2ToStruct(signature);
+    const pubStruct = g1ToStruct(publicKey);
     const result = await blsVerify.verify(message, sigStruct, pubStruct);
+    expect(result).to.be.true;
+  });
+
+  it("should verify a valid aggregated BLS signatures", async () => {
+    const blsl = bls.longSignatures;
+    const messages = [
+      new TextEncoder().encode("hello"),
+      new TextEncoder().encode("world")
+    ];
+
+    const keypairs = Array.from({ length: messages.length }, () => blsl.keygen());
+    const pubKeys = keypairs.map((k) => g1ToStruct(k.publicKey));
+
+    const signatures = messages.map((msg, i) => {
+      const msgHash = blsl.hash(msg);
+      return blsl.sign(msgHash, keypairs[i].secretKey);
+    });
+    const aggSig = blsl.aggregateSignatures(signatures);
+    const aggSigStruct = g2ToStruct(aggSig);
+    const result = await blsVerify.verifyAgg(messages, pubKeys, aggSigStruct);
+
     expect(result).to.be.true;
   });
 });
