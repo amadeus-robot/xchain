@@ -17,6 +17,7 @@ describe("BLSVerify", function () {
     const { secretKey, publicKey } = blsl.keygen();
     const msgp = blsl.hash(message);
     const msgpd = blsl.hash(message, 'AMADEUS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_');
+    console.log("Message:", msgp);
     const signature = blsl.sign(msgp, secretKey);
     
     const sigPoint = bls.G2.Point.fromHex(signature.toHex());
@@ -28,6 +29,8 @@ describe("BLSVerify", function () {
     const sigStruct = g2ToStruct(sigPoint);
     const pubStruct = g1ToStruct(pubPoint);
 
+    console.log("Signature Struct:", sigStruct);
+    console.log("Public Key Struct:", pubStruct);
 
     // Now convert points to Solidity struct format
     // NOTE: Your Solidity contract expects:
@@ -38,6 +41,7 @@ describe("BLSVerify", function () {
     // but full G1/G2 decompositions would require splitting X/Y coordinates.
 
     // If you’ve added helper methods to convert these, you can do:
+
     const result = await blsVerify.verify(message, sigStruct, pubStruct);
     expect(result).to.be.true;
   });

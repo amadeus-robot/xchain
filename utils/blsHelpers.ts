@@ -1,5 +1,3 @@
-import {bls12_381 as bls, Fp, Fp2} from "@noble/curves/bls12-381";
-
 function fpToLimbStruct(fp: bigint) {
   const hex = fp.toString(16).padStart(96, '0'); // 381 bits ≈ 48 bytes, but we pad for clarity
   const lo = "0x" + hex.slice(-64);   // lower 256 bits
