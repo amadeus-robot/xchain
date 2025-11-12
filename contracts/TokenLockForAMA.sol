@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract TokenLock is Ownable {
+contract TokenLockForAMA is Ownable {
 
     event Locked(
         address indexed token,
