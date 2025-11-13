@@ -1,7 +1,9 @@
 import "dotenv/config";
 import { ethers } from "ethers";
 import { connectMongo } from "./db";
-import { createContract, startRealtimeListener, syncPastEvents } from "./listener";
+import { startRealtimeListener, syncPastEvents } from "./listener";
+
+import ABI from "./abi/TokenLockForAMA.json";
 
 async function main(): Promise<void> {
   console.log("🚀 Starting Cross-Chain Event Listener...\n");
@@ -32,7 +34,7 @@ async function main(): Promise<void> {
     console.log("✅ Connected to blockchain provider");
 
     // Create contract instance
-    const contract = createContract(provider, CONTRACT_ADDRESS);
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
     console.log(`✅ Contract loaded: ${CONTRACT_ADDRESS}\n`);
 
     // Sync past events (safe to run on every start)
@@ -62,7 +64,6 @@ async function main(): Promise<void> {
         console.error("⚠️  Error disconnecting MongoDB:", err);
       }
 
-      console.log("👋 Goodbye!\n");
       process.exit(0);
     };
 

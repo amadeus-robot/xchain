@@ -7,9 +7,6 @@ export interface ILockedEvent extends Document {
   targetAddress: string;
   timestamp: number;
   txHash: string;
-  blockNumber: number;
-  logIndex: number;
-  raw?: any;
   processedAt: Date;
 }
 
@@ -20,16 +17,13 @@ const LockedEventSchema = new Schema<ILockedEvent>({
   targetAddress: { type: String, required: true },
   timestamp: { type: Number, required: true },
   txHash: { type: String, required: true, index: true },
-  blockNumber: { type: Number, required: true, index: true },
-  logIndex: { type: Number, required: true },
-  raw: { type: Schema.Types.Mixed, required: false },
   processedAt: { type: Date, required: true, default: () => new Date() }
 }, {
   timestamps: false
 });
 
 // Ensure uniqueness per chain event (txHash + logIndex)
-LockedEventSchema.index({ txHash: 1, logIndex: 1 }, { unique: true });
+LockedEventSchema.index({ txHash: 1 }, { unique: true });
 
 export const LockedEvent: Model<ILockedEvent> = mongoose.model<ILockedEvent>("LockedEvent", LockedEventSchema);
 

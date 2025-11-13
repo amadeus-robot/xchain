@@ -1,9 +1,5 @@
-import { ethers, Contract, EventLog } from "ethers";
+import { Contract, EventLog } from "ethers";
 import { LockedEvent } from "./db";
-
-const ABI = [
-  "event Locked(address indexed token, address indexed user, uint256 amount, string targetAddress, uint256 timestamp)"
-];
 
 export interface ParsedLockedEvent {
   token: string;
@@ -12,22 +8,12 @@ export interface ParsedLockedEvent {
   targetAddress: string;
   timestamp: number;
   txHash: string;
-  blockNumber: number;
-  logIndex: number;
-  raw?: any;
-}
-
-/**
- * Create contract instance
- */
-export function createContract(provider: ethers.JsonRpcProvider, address: string): Contract {
-  return new ethers.Contract(address, ABI, provider);
 }
 
 /**
  * Parse an ethers event into our structure
  */
-export function parseLockedEvent(log: EventLog): ParsedLockedEvent {
+export function parseLockedEvent(log: any): ParsedLockedEvent {
   const args = log.args as any;
   return {
     token: args.token.toString(),
@@ -36,12 +22,6 @@ export function parseLockedEvent(log: EventLog): ParsedLockedEvent {
     targetAddress: args.targetAddress,
     timestamp: Number(args.timestamp.toString()),
     txHash: log.transactionHash,
-    blockNumber: Number(log.blockNumber),
-    logIndex: Number(log.index),
-    raw: {
-      topics: log.topics,
-      data: log.data
-    }
   };
 }
 
@@ -54,7 +34,7 @@ export async function saveLockedEvent(parsed: ParsedLockedEvent): Promise<void> 
       ...parsed,
       processedAt: new Date()
     });
-    console.log(`✅ Saved event: tx=${parsed.txHash.slice(0, 10)}... logIndex=${parsed.logIndex}`);
+    console.log(`✅ Saved event: tx=${parsed.txHash.slice(0, 10)}...`);
   } catch (err: any) {
     if (err.code === 11000) {
       console.log(`⏭️  Duplicate event (already processed): tx=${parsed.txHash.slice(0, 10)}...`);
@@ -106,12 +86,15 @@ export function startRealtimeListener(contract: Contract): void {
   
   contract.on("Locked", async (...args: any[]) => {
     const event = args[args.length - 1] as EventLog;
+    console.log(args, "+++++++++++++++++++");
+    console.log(event, "===================");
     const parsed = parseLockedEvent(event);
+    console.log(parsed, "*******************");
     await saveLockedEvent(parsed);
   });
 
-  contract.on("error", (err: any) => {
-    console.error("❌ Contract listener error:", err);
+  contract.on("Unlocked", async (...args: any[]) => {
+    console.log(args)
   });
 }
 

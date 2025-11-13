@@ -103,15 +103,11 @@ event Locked(
   targetAddress: string;  // Destination address
   timestamp: number;      // Event timestamp
   txHash: string;         // Transaction hash
-  blockNumber: number;    // Block number
-  logIndex: number;       // Log index in transaction
-  raw: object;           // Raw event data (topics, data)
-  processedAt: Date;     // When this was saved
 }
 ```
 
 **Indexes:**
-- Unique: `(txHash, logIndex)` - prevents duplicates
+- Unique: `(txHash)` - prevents duplicates
 - Regular: `token`, `user`, `txHash`, `blockNumber`
 
 ## 💡 Why This Setup?
