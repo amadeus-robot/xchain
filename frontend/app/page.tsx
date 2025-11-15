@@ -22,34 +22,8 @@ export default function Home() {
           <div className="flex justify-center">
             <BridgeForm />
           </div>
-
-          {/* Features Section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
-            <div className="bg-white/50 backdrop-blur-sm rounded-xl p-6 text-center">
-              <div className="text-4xl mb-3">⚡</div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Fast Transfers</h3>
-              <p className="text-gray-600 text-sm">
-                Bridge your tokens in minutes with our optimized protocol
-              </p>
-            </div>
-            <div className="bg-white/50 backdrop-blur-sm rounded-xl p-6 text-center">
-              <div className="text-4xl mb-3">🔒</div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Secure</h3>
-              <p className="text-gray-600 text-sm">
-                Smart contracts audited and battle-tested for your safety
-              </p>
-            </div>
-            <div className="bg-white/50 backdrop-blur-sm rounded-xl p-6 text-center">
-              <div className="text-4xl mb-3">💰</div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Low Fees</h3>
-              <p className="text-gray-600 text-sm">
-                Minimal gas costs for cross-chain token transfers
-              </p>
-            </div>
-          </div>
         </div>
       </main>
-
       <Footer />
     </div>
   );

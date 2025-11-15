@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
-import { BRIDGE_CONTRACT_ADDRESS, SUPPORTED_TOKENS, ERC20_ABI } from '@/lib/constants';
+import { BRIDGE_CONTRACT_ADDRESS, SUPPORTED_TOKENS } from '@/lib/constants';
 import TokenLockABI from '@/lib/abi/TokenLockForAMA.json';
-
+import ERC20ABI from '@/lib/abi/ERC20.json';
 export function BridgeForm() {
   const { address, isConnected } = useAccount();
   const [selectedToken, setSelectedToken] = useState(SUPPORTED_TOKENS[0]);
@@ -27,7 +27,7 @@ export function BridgeForm() {
   // Read token balance
   const { data: balance } = useReadContract({
     address: selectedToken.address as `0x${string}`,
-    abi: ERC20_ABI,
+    abi: ERC20ABI,
     functionName: 'balanceOf',
     args: [address as `0x${string}`],
     query: {
@@ -38,7 +38,7 @@ export function BridgeForm() {
   // Read allowance
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: selectedToken.address as `0x${string}`,
-    abi: ERC20_ABI,
+    abi: ERC20ABI,
     functionName: 'allowance',
     args: [address as `0x${string}`, BRIDGE_CONTRACT_ADDRESS as `0x${string}`],
     query: {
@@ -70,7 +70,7 @@ export function BridgeForm() {
       
       approveToken({
         address: selectedToken.address as `0x${string}`,
-        abi: ERC20_ABI,
+        abi: ERC20ABI,
         functionName: 'approve',
         args: [BRIDGE_CONTRACT_ADDRESS as `0x${string}`, amountInWei],
       });
@@ -293,7 +293,7 @@ export function BridgeForm() {
       )}
 
       {/* Transaction Status */}
-      {(approveHash || lockHash) && step !== 'success' && (
+      {(approveHash || lockHash) && (
         <div className="mt-4 text-center text-sm">
           {approveHash && step === 'approve' && (
             <a
