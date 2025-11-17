@@ -1,5 +1,5 @@
 import { Contract, EventLog } from "ethers";
-import { LockedEvent } from "./db";
+import { LockedEvent, updateBlockPointer } from "./db";
 
 export interface ParsedLockedEvent {
   token: string;
@@ -74,8 +74,10 @@ export async function syncPastEvents(
     
     start = end + 1;
   }
+  await updateBlockPointer("ethereum", latest);
   
   console.log("✅ Past events sync complete");
+  console.log(`📍 Block pointer updated to: ${latest}`);
 }
 
 /**
@@ -86,10 +88,7 @@ export function startRealtimeListener(contract: Contract): void {
   
   contract.on("Locked", async (...args: any[]) => {
     const event = args[args.length - 1] as EventLog;
-    console.log(args, "+++++++++++++++++++");
-    console.log(event, "===================");
     const parsed = parseLockedEvent(event);
-    console.log(parsed, "*******************");
     await saveLockedEvent(parsed);
   });
 

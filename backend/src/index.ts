@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { ethers } from "ethers";
-import { connectMongo } from "./db";
+import { connectMongo, getBlockPointer } from "./db";
 import { startRealtimeListener, syncPastEvents } from "./listener";
 
 import ABI from "./abi/TokenLockForAMA.json";
@@ -37,8 +37,12 @@ async function main(): Promise<void> {
     const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
     console.log(`✅ Contract loaded: ${CONTRACT_ADDRESS}\n`);
 
+    // Get the block pointer from DB (or use FROM_BLOCK as default for first run)
+    const fromBlock = await getBlockPointer("ethereum", FROM_BLOCK);
+    console.log(`📍 Starting sync from block: ${fromBlock}\n`);
+
     // Sync past events (safe to run on every start)
-    await syncPastEvents(contract, FROM_BLOCK, BATCH_SIZE);
+    await syncPastEvents(contract, fromBlock, BATCH_SIZE);
     console.log("");
 
     // Start real-time event listener
