@@ -1,5 +1,6 @@
 import { Contract, EventLog } from "ethers";
-import { LockedEvent, updateBlockPointer } from "./db";
+import { LockedEvent, updateBlockPointer, ILockedEvent } from "./db";
+import { processUnexecutedEvent } from "./executor";
 
 export interface ParsedLockedEvent {
   token: string;
@@ -27,20 +28,23 @@ export function parseLockedEvent(log: any): ParsedLockedEvent {
 
 /**
  * Save parsed event to MongoDB (idempotent due to unique index)
+ * Returns the saved event or null if duplicate/error
  */
-export async function saveLockedEvent(parsed: ParsedLockedEvent): Promise<void> {
+export async function saveLockedEvent(parsed: ParsedLockedEvent): Promise<ILockedEvent | null> {
   try {
-    await LockedEvent.create({
+    const savedEvent = await LockedEvent.create({
       ...parsed,
       processedAt: new Date()
     });
     console.log(`✅ Saved event: tx=${parsed.txHash.slice(0, 10)}...`);
+    return savedEvent;
   } catch (err: any) {
     if (err.code === 11000) {
       console.log(`⏭️  Duplicate event (already processed): tx=${parsed.txHash.slice(0, 10)}...`);
     } else {
       console.error("❌ Failed to save event:", err.message);
     }
+    return null;
   }
 }
 
@@ -89,11 +93,15 @@ export function startRealtimeListener(contract: Contract): void {
   contract.on("Locked", async (...args: any[]) => {
     const event = args[args.length - 1] as EventLog;
     const parsed = parseLockedEvent(event);
-    await saveLockedEvent(parsed);
+    const savedEvent = await saveLockedEvent(parsed);
+    
+    // Immediately process the event for AMA execution
+    if (savedEvent) {
+      await processUnexecutedEvent(savedEvent);
+    }
   });
 
   contract.on("Unlocked", async (...args: any[]) => {
     console.log(args)
   });
 }
-

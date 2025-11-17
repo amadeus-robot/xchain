@@ -2,6 +2,7 @@ import "dotenv/config";
 import { ethers } from "ethers";
 import { connectMongo, getBlockPointer } from "./db";
 import { startRealtimeListener, syncPastEvents } from "./listener";
+import { startRealtimeExecutor, processBacklog, startPeriodicCheck } from "./executor";
 
 import ABI from "./abi/TokenLockForAMA.json";
 
@@ -45,9 +46,21 @@ async function main(): Promise<void> {
     await syncPastEvents(contract, fromBlock, BATCH_SIZE);
     console.log("");
 
+    // Process any existing unexecuted events
+    await processBacklog();
+    console.log("");
+
     // Start real-time event listener
     startRealtimeListener(contract);
-    console.log("\n✅ Listener is running. Press Ctrl+C to stop.\n");
+    console.log("");
+
+    // Start real-time AMA executor
+    startRealtimeExecutor();
+    
+    // Start periodic backup check (optional, runs every 5 minutes)
+    startPeriodicCheck(300000);
+
+    console.log("\n✅ All services running. Press Ctrl+C to stop.\n");
 
     // Graceful shutdown handler
     const shutdown = async () => {
