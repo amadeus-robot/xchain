@@ -126,12 +126,6 @@ Verifies a single BLS12-381 signature using the pairing precompile at address `0
 
 **Function:** `verifySignature(sigX, sigY, hX, hY, pkXc0, pkXc1, pkYc0, pkYc1)`
 
-### Bls12381BatchVerifier
-
-Verifies multiple BLS signatures efficiently:
-- `verifyBatch()` - Verifies multiple individual signatures
-- `verifyAggregated()` - Verifies one aggregated signature for multiple messages
-
 ### L1StateLightClient
 
 Verifies L1 state commitments using KZG point evaluation (precompile at `0x0A`).

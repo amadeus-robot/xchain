@@ -58,8 +58,6 @@ describe("L1StateLightClient", function () {
 
       try {
         const result = await client.proveKV(payload);
-        console.log("⛽ proveKV result:", result);
-
         const ok = await client.proveKV(payload);
         expect(ok).to.be.false;
       } catch (err) {

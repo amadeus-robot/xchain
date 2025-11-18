@@ -16,7 +16,7 @@ describe("TokenLockForAMA", function () {
 
     // Deploy ERC20 mock
     const ERC20Mock = await ethers.getContractFactory("ERC20Mock");
-    token = await ERC20Mock.deploy("Mock Token", "MCK", await owner.getAddress(), initialSupply);
+    token = await ERC20Mock.deploy();
     await token.waitForDeployment();
 
     // Deploy TokenLockForAMA
