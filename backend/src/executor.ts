@@ -1,4 +1,5 @@
 import { LockedEvent, ILockedEvent } from "./db";
+import { build_tx, from_b58, to_b58 } from "./utils";
 
 export interface ExecuteAmaPayload {
   token: string;
@@ -13,7 +14,26 @@ export interface ExecuteAmaPayload {
  * Call the AMA API with the locked event data
  */
 export async function executeAmaApi(event: ILockedEvent): Promise<boolean> {
-  
+  try {
+    const packed_tx = build_tx(
+      "Coin",
+      "transfer",
+      [from_b58(event.targetAddress), event.amount.toString(), "AMA"]
+    );
+
+    const response = await fetch(
+      `${process.env.AMA_RPC}/api/tx/submit/${to_b58(packed_tx)}`
+    );
+
+    console.log(response)
+
+    // Else just return true if the request succeeded
+    return true;
+
+  } catch (error) {
+    console.error("Error executing AMA API:", error);
+    return false;
+  }
 }
 
 /**

@@ -10,10 +10,17 @@
     "watch": "tsc -w",
     "clean": "rimraf dist"
   },
-  "keywords": ["blockchain", "ethereum", "event-listener", "mongodb"],
+  "keywords": [
+    "blockchain",
+    "ethereum",
+    "event-listener",
+    "mongodb"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@noble/curves": "^1.8.0",
+    "bs58": "^6.0.0",
     "dotenv": "^16.6.1",
     "ethers": "^6.9.0",
     "mongoose": "^7.7.0"
@@ -24,4 +31,3 @@
     "typescript": "^5.5.6"
   }
 }
-
