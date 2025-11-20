@@ -19,7 +19,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@amadeus/vecpak-js": "https://gitpkg.now.sh/amadeusprotocol/chain/vecpak/bindings/js?main",
     "@noble/curves": "^1.8.0",
+    "axios": "^1.13.2",
     "bs58": "^6.0.0",
     "dotenv": "^16.6.1",
     "ethers": "^6.9.0",

@@ -2,7 +2,6 @@ import { bls12_381 as bls } from "@noble/curves/bls12-381";
 import { blake3 } from "@noble/hashes/blake3";
 import "dotenv/config";
 import { canonicalSerialize } from "./vanillaser";
-import bs58 from "bs58";
 
 // -----------------------------------------------------------------------------
 // Types
@@ -16,7 +15,7 @@ export interface TxAction {
 }
 
 export interface TxObject {
-  signer: string;
+  signer: Uint8Array;
   nonce: bigint;
   actions: TxAction[];
 }
@@ -73,20 +72,23 @@ export function reduce512To256LE(bytes64: Uint8Array): Uint8Array {
   return out;
 }
 
+export function seed64_to_keypair(seed64: Uint8Array) {
+	const sk = reduce512To256LE(seed64);
+	const pk = bls.getPublicKey(sk);
+  return [pk, sk]
+}
+
 // -----------------------------------------------------------------------------
 // Signing
 // -----------------------------------------------------------------------------
 
 export function sign_tx(hash: Uint8Array): Uint8Array {
-  const sk = process.env.AMA_SK;
-
-
-
+  const seed64 = from_b58(process.env.SEED as string);
+  const [pk, sk] = seed64_to_keypair(seed64);
   if (!sk) {
     throw new Error("Missing AMA_SK in environment");
   }
-
-  return bls.sign(hash, bs58.decode(sk));
+  return bls.sign(hash, sk, {DST: "AMADEUS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_TX_"});
 }
 
 // -----------------------------------------------------------------------------
@@ -98,9 +100,10 @@ export function build_tx(
   func: string,
   args: any
 ): Uint8Array {
+  const seed64 = from_b58(process.env.SEED as string);
+  const [pk, sk] = seed64_to_keypair(seed64);
   const tx: TxObject = {
-    signer:
-      "7bP1XvjYapT6prSwjh4LcfjPS9UERmV8mMRVhKQCrUqoqZHpQXkiWcMB5yJBvHwZtK",
+    signer:pk,
     nonce: BigInt(Date.now()) * 1_000_000n,
     actions: [{ op: "call", contract, function: func, args }]
   };

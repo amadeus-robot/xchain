@@ -3,19 +3,12 @@ import { ethers } from "ethers";
 import { connectMongo, getBlockPointer } from "./db";
 import { startRealtimeListener, syncPastEvents } from "./listener";
 import { startRealtimeExecutor, processBacklog, startPeriodicCheck } from "./executor";
-
 import ABI from "./abi/TokenLockForAMA.json";
-import { build_tx, from_b58,  } from "./utils";
 
+
+import { build_tx, from_b58, to_b58, seed64_to_keypair, reduce512To256LE } from "./utils";
 async function main(): Promise<void> {
-  console.log("🚀 Starting Cross-Chain Event Listener...\n");
-  const packed_tx = build_tx(
-    "Coin",
-    "transfer",
-    [from_b58("6StrePMSXgh6wPmng57WetCgNCXEHVBa8DPEjGSYv9FbAGrov3f8FBjND53TxUXtz5"), "100", "AMA"]
-  );
-
-  console.log(packed_tx, "+++++++++++")
+  
   // Load environment variables
   const RPC_URL = process.env.RPC_URL;
   const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;

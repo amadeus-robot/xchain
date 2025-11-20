@@ -1,3 +1,4 @@
+import axios from "axios";
 import { LockedEvent, ILockedEvent } from "./db";
 import { build_tx, from_b58, to_b58 } from "./utils";
 
@@ -17,17 +18,17 @@ export async function executeAmaApi(event: ILockedEvent): Promise<boolean> {
   try {
     const packed_tx = build_tx(
       "Coin",
-      "transfer",
-      [from_b58(event.targetAddress), event.amount.toString(), "AMA"]
+      "mint",
+      [from_b58(event.targetAddress), Number(Number(event.amount)* 1000000000).toString(), "WUSDT"]
     );
-
-    const response = await fetch(
-      `${process.env.AMA_RPC}/api/tx/submit/${to_b58(packed_tx)}`
-    );
-
-    console.log(response)
-
-    // Else just return true if the request succeeded
+  
+    const response = await axios.post(`https://nodes.amadeus.bot/api/tx/submit_and_wait`, packed_tx, {
+      headers: {
+        'Content-Type': 'application/octet-stream'
+      }
+    })
+  
+    console.log(response.data, "+++++++++++")
     return true;
 
   } catch (error) {
