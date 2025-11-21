@@ -1,67 +1,47 @@
+# OpenNext Starter
 
-## 🚀 Getting Started
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-### Prerequisites
+## Getting Started
 
-- Node.js 18+ and npm
-- A Web3 wallet (MetaMask recommended)
-- Sepolia testnet ETH for gas fees
+Read the documentation at https://opennext.js.org/cloudflare.
 
-### Installation
+## Develop
 
-1. **Install dependencies:**
-
-```bash
-npm install
-```
-
-2. **Configure environment variables:**
-
-Copy `.env.example` to `.env.local` and update the values:
-
-```env
-# Network Configuration
-NEXT_PUBLIC_ETHEREUM_CHAIN_ID=11155111
-NEXT_PUBLIC_ETHEREUM_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR-KEY
-
-# WalletConnect Project ID (get from https://cloud.walletconnect.com)
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id_here
-```
-
-3. **Run the development server:**
+Run the Next.js development server:
 
 ```bash
 npm run dev
+# or similar package manager command
 ```
 
-4. **Open your browser:**
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-Navigate to [http://localhost:3000](http://localhost:3000)
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Preview
 
-## 🔧 Configuration
+Preview the application locally on the Cloudflare runtime:
 
-### Supported Networks
-
-Currently configured for:
-- **Ethereum Sepolia Testnet** (Chain ID: 11155111)
-
-To add more networks, update `lib/wagmi.ts`:
-
-
-### Adding More Tokens
-
-Edit `lib/constants.ts` to add more supported tokens:
-
-```typescript
-export const SUPPORTED_TOKENS = [
-  {
-    address: '0x...',
-    symbol: 'TOKEN',
-    name: 'Token Name',
-    decimals: 18,
-    logo: '/tokens/token.png'
-  },
-  // Add more tokens here
-];
+```bash
+npm run preview
+# or similar package manager command
 ```
+
+## Deploy
+
+Deploy the application to Cloudflare:
+
+```bash
+npm run deploy
+# or similar package manager command
+```
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!

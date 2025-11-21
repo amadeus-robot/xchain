@@ -54,12 +54,30 @@ export function BridgeForm() {
   }, [isApproveSuccess, refetchAllowance]);
 
   useEffect(() => {
-    if (isLockSuccess) {
+    if (isLockSuccess && lockHash) {
+      // Send transaction hash to API
+      fetch('https://cloudflare.amadeusprotocolxyz.workers.dev', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          txhash: lockHash,
+        }),
+      })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Transaction hash sent successfully:', data);
+        })
+        .catch(error => {
+          console.error('Error sending transaction hash:', error);
+        });
+
       setStep('success');
       setAmount('');
       setAmaAddress('');
     }
-  }, [isLockSuccess]);
+  }, [isLockSuccess, lockHash]);
 
   const handleApprove = async () => {
     if (!amount || !selectedToken.address) return;
@@ -320,4 +338,5 @@ export function BridgeForm() {
     </div>
   );
 }
+
 

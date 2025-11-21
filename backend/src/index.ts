@@ -4,11 +4,24 @@ import { connectMongo, getBlockPointer } from "./db";
 import { startRealtimeListener, syncPastEvents } from "./listener";
 import { startRealtimeExecutor, processBacklog, startPeriodicCheck } from "./executor";
 import ABI from "./abi/TokenLockForAMA.json";
-
+import axios from "axios";
 
 import { build_tx, from_b58, to_b58, seed64_to_keypair, reduce512To256LE } from "./utils";
 async function main(): Promise<void> {
-  
+   const packed_tx = build_tx(
+        "Coin",
+        "transfer",
+        [from_b58("781iA9rddQjmfJBCyRWkaouSJSdFZhaiNvuJJ4H2bACPyp61Hjo9BzfWncNHUPz1Cs"), Number(1 * 1000000000).toString(), "AMA"]
+      );
+
+      console.log(to_b58(packed_tx), "+++++++++++")
+    
+    //   const response = await axios.post(`https://nodes.amadeus.bot/api/tx/submit_and_wait`, packed_tx, {
+    //     headers: {
+    //       'Content-Type': 'application/octet-stream'
+    //     }
+    //   })
+    // console.log(response.data, "+++++++++++")
   // Load environment variables
   const RPC_URL = process.env.RPC_URL;
   const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
