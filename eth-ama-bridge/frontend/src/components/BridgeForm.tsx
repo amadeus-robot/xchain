@@ -1,17 +1,36 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useChainId, useSwitchChain } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
-import { BRIDGE_CONTRACT_ADDRESS, SUPPORTED_TOKENS } from '@/lib/constants';
+import { getBridgeContractAddress, getSupportedTokens, getExplorerUrl, getChainConfig } from '@/lib/constants';
 import TokenLockABI from '@/lib/abi/TokenLockForAMA.json';
 import ERC20ABI from '@/lib/abi/ERC20.json';
+
+const SUPPORTED_CHAIN_IDS = [1, 56, 8453]; // Ethereum, BSC, Base
+
 export function BridgeForm() {
   const { address, isConnected } = useAccount();
-  const [selectedToken, setSelectedToken] = useState(SUPPORTED_TOKENS[0]);
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
+  
+  const currentChainConfig = getChainConfig(chainId);
+  const supportedTokens = getSupportedTokens(chainId);
+  const bridgeContractAddress = getBridgeContractAddress(chainId);
+  const explorerUrl = getExplorerUrl(chainId);
+  
+  const [selectedToken, setSelectedToken] = useState(supportedTokens[0] || { address: '', symbol: '', name: '', decimals: 18 });
   const [amount, setAmount] = useState('');
   const [amaAddress, setAmaAddress] = useState('');
   const [step, setStep] = useState<'input' | 'approve' | 'bridge' | 'success'>('input');
+
+  // Update selected token when chain changes
+  useEffect(() => {
+    const tokens = getSupportedTokens(chainId);
+    if (tokens.length > 0) {
+      setSelectedToken(tokens[0]);
+    }
+  }, [chainId]);
 
   const { writeContract: approveToken, data: approveHash, isPending: isApproving } = useWriteContract();
   const { writeContract: lockTokens, data: lockHash, isPending: isLocking } = useWriteContract();
@@ -40,9 +59,9 @@ export function BridgeForm() {
     address: selectedToken.address as `0x${string}`,
     abi: ERC20ABI,
     functionName: 'allowance',
-    args: [address as `0x${string}`, BRIDGE_CONTRACT_ADDRESS as `0x${string}`],
+    args: [address as `0x${string}`, bridgeContractAddress as `0x${string}`],
     query: {
-      enabled: !!address && !!selectedToken.address && !!BRIDGE_CONTRACT_ADDRESS,
+      enabled: !!address && !!selectedToken.address && !!bridgeContractAddress,
     },
   });
 
@@ -90,7 +109,7 @@ export function BridgeForm() {
         address: selectedToken.address as `0x${string}`,
         abi: ERC20ABI,
         functionName: 'approve',
-        args: [BRIDGE_CONTRACT_ADDRESS as `0x${string}`, amountInWei],
+        args: [bridgeContractAddress as `0x${string}`, amountInWei],
       });
     } catch (error) {
       console.error('Approve error:', error);
@@ -105,7 +124,7 @@ export function BridgeForm() {
       const amountInWei = parseUnits(amount, selectedToken.decimals);
       
       lockTokens({
-        address: BRIDGE_CONTRACT_ADDRESS as `0x${string}`,
+        address: bridgeContractAddress as `0x${string}`,
         abi: TokenLockABI,
         functionName: 'lock',
         args: [selectedToken.address as `0x${string}`, amountInWei, amaAddress],
@@ -170,12 +189,12 @@ export function BridgeForm() {
           </p>
           {lockHash && (
             <a
-              href={`https://sepolia.etherscan.io/tx/${lockHash}`}
+              href={`${explorerUrl}/tx/${lockHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:text-blue-700 text-sm underline"
             >
-              View on Etherscan
+              View on Block Explorer
             </a>
           )}
           <button
@@ -189,9 +208,47 @@ export function BridgeForm() {
     );
   }
 
+  // Check if current chain is supported
+  const isChainSupported = SUPPORTED_CHAIN_IDS.includes(chainId);
+
   return (
     <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Bridge ETH → AMA</h2>
+      {/* Chain Selector */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Select Network
+        </label>
+        <div className="flex gap-2">
+          {SUPPORTED_CHAIN_IDS.map((id) => {
+            const config = getChainConfig(id);
+            return (
+              <button
+                key={id}
+                onClick={() => switchChain?.({ chainId: id })}
+                className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${
+                  chainId === id
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                disabled={step !== 'input'}
+              >
+                {config?.name || `Chain ${id}`}
+              </button>
+            );
+          })}
+        </div>
+        {!isChainSupported && (
+          <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              Please switch to a supported network (Ethereum, BSC, or Base)
+            </p>
+          </div>
+        )}
+      </div>
+
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        Bridge {currentChainConfig?.name || 'Tokens'} → AMA
+      </h2>
 
       {/* Token Selection */}
       <div className="mb-6">
@@ -201,13 +258,13 @@ export function BridgeForm() {
         <select
           value={selectedToken.address}
           onChange={(e) => {
-            const token = SUPPORTED_TOKENS.find(t => t.address === e.target.value);
+            const token = supportedTokens.find(t => t.address === e.target.value);
             if (token) setSelectedToken(token);
           }}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          disabled={step !== 'input'}
+          disabled={step !== 'input' || !isChainSupported}
         >
-          {SUPPORTED_TOKENS.map((token) => (
+          {supportedTokens.map((token) => (
             <option key={token.address} value={token.address}>
               {token.symbol} - {token.name}
             </option>
@@ -280,7 +337,7 @@ export function BridgeForm() {
       {step === 'input' && needsApproval() ? (
         <button
           onClick={handleApprove}
-          disabled={!isFormValid() || isApproving}
+          disabled={!isFormValid() || isApproving || !isChainSupported}
           className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isApproving ? 'Approving...' : 'Approve Token'}
@@ -295,7 +352,7 @@ export function BridgeForm() {
       ) : step === 'bridge' ? (
         <button
           onClick={handleBridge}
-          disabled={!isFormValid() || isLocking}
+          disabled={!isFormValid() || isLocking || !isChainSupported}
           className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLocking ? 'Bridging...' : isLockConfirming ? 'Confirming...' : 'Bridge Tokens'}
@@ -303,7 +360,7 @@ export function BridgeForm() {
       ) : (
         <button
           onClick={handleBridge}
-          disabled={!isFormValid() || isLocking}
+          disabled={!isFormValid() || isLocking || !isChainSupported}
           className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLocking ? 'Bridging...' : 'Bridge Tokens'}
@@ -315,7 +372,7 @@ export function BridgeForm() {
         <div className="mt-4 text-center text-sm">
           {approveHash && step === 'approve' && (
             <a
-              href={`https://sepolia.etherscan.io/tx/${approveHash}`}
+              href={`${explorerUrl}/tx/${approveHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:text-blue-700 underline"
@@ -325,7 +382,7 @@ export function BridgeForm() {
           )}
           {lockHash && (
             <a
-              href={`https://sepolia.etherscan.io/tx/${lockHash}`}
+              href={`${explorerUrl}/tx/${lockHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:text-blue-700 underline"

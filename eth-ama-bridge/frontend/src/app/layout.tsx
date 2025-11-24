@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "ETH-AMA Bridge",
-	description: "Cross-chain token bridge between Ethereum and AMA networks",
+	title: "Multi-Chain AMA Bridge",
+	description: "Cross-chain token bridge between Ethereum, BSC, Base and AMA networks",
 };
 
 export default function RootLayout({

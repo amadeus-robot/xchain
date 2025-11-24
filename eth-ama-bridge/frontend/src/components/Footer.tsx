@@ -9,7 +9,7 @@ export function Footer() {
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">About</h3>
               <p className="text-gray-600 text-sm">
-                Secure cross-chain bridge between Ethereum and AMA networks.
+                Secure cross-chain bridge between Ethereum, BSC, Base and AMA networks.
               </p>
             </div>
             <div>
@@ -33,15 +33,25 @@ export function Footer() {
               </ul>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">Network</h3>
-              <div className="flex items-center space-x-2 text-sm">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-gray-600">Sepolia Testnet</span>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Supported Networks</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                  Ethereum
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                  BSC
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                  Base
+                </li>
+              </ul>
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-200 text-center text-sm text-gray-600">
-            <p>© 2025 ETH-AMA Bridge. Built with Next.js and RainbowKit.</p>
+            <p>© 2025 Multi-Chain AMA Bridge. Built with Next.js and RainbowKit.</p>
           </div>
         </div>
       </div>

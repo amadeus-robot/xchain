@@ -14,7 +14,7 @@ export default function Home() {
 							Bridge Your Tokens
 						</h2>
 						<p className="text-lg text-gray-600 max-w-2xl mx-auto">
-							Seamlessly transfer tokens from Ethereum to AMA chain. 
+							Seamlessly transfer tokens from Ethereum, BSC, or Base to AMA chain. 
 							Fast, secure, and decentralized cross-chain bridging.
 						</p>
 					</div>
