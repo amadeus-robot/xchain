@@ -3,7 +3,16 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "hardhat test",
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy-transparent.ts",
+    "deploy:sepolia": "hardhat run scripts/deploy-transparent.ts --network sepolia",
+    "deploy:base": "hardhat run scripts/deploy-transparent.ts --network base",
+    "deploy:bsc": "hardhat run scripts/deploy-transparent.ts --network bsc",
+    "check": "hardhat run scripts/check-deployment.ts",
+    "check:sepolia": "hardhat run scripts/check-deployment.ts --network sepolia",
+    "check:base": "hardhat run scripts/check-deployment.ts --network base",
+    "check:bsc": "hardhat run scripts/check-deployment.ts --network bsc"
   },
   "keywords": [],
   "author": "",
@@ -34,7 +43,8 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.4.0",
+    "@openzeppelin/contracts-upgradeable": "^5.4.0",
+    "@openzeppelin/hardhat-upgrades": "^3.6.0",
     "dotenv": "^17.2.3",
     "solady": "^0.1.26"
   }

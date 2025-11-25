@@ -38,7 +38,7 @@ export const CHAIN_CONFIGS: { [key: number]: ChainConfig } = {
   56: {
     chainId: 56,
     name: 'BSC',
-    bridgeContract: process.env.NEXT_PUBLIC_BSC_BRIDGE_CONTRACT || '0x9bA6287bFe540674eEB71d7fc8A5Ca25103e19B1',
+    bridgeContract: process.env.NEXT_PUBLIC_BSC_BRIDGE_CONTRACT || '0x57611547BbE6B8b566c87759d1ad2706d05Ab895',
     explorerUrl: 'https://bscscan.com',
     tokens: [
       {
