@@ -87,6 +87,18 @@ describe("AmaVecPakO2", function () {
       };
 
       const result = await wrapper.encodeAmaHeader(header);
+      const gasEstimate = await wrapper.encodeAmaHeader.estimateGas(header);
+      const feeData = await ethers.provider.getFeeData();
+      const gasPriceWei = feeData.gasPrice ?? feeData.maxFeePerGas;
+      if (gasPriceWei) {
+        const gasFeeWei = gasEstimate * gasPriceWei;
+        console.log(
+          `encodeAmaHeader gas=${gasEstimate.toString()} | fee=${gasFeeWei.toString()} wei`
+        );
+      } else {
+        console.log(`encodeAmaHeader gas=${gasEstimate.toString()} (no gas price available)`);
+      }
+
       expect(result).to.be.a("string");
       expect(result.slice(0, 4)).to.equal("0x07"); // TYPE_MAP = 0x07
       expect(result.length).to.be.greaterThan(100); // Should be substantial encoding

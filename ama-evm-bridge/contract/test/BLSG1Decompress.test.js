@@ -33,6 +33,18 @@ describe("BLSG1Decompress", function () {
       // Call contract's decompress function
       const contractResult = await g1Decompress.decompress(compressedHex);
       
+      const gasEstimate = await g1Decompress.decompress.estimateGas(compressedHex);
+      const feeData = await ethers.provider.getFeeData();
+      const gasPriceWei = feeData.gasPrice ?? feeData.maxFeePerGas;
+      if (gasPriceWei) {
+        const gasFeeWei = gasEstimate * gasPriceWei;
+        console.log(
+          `decompress gas=${gasEstimate.toString()} | fee=${gasFeeWei.toString()} wei`
+        );
+      } else {
+        console.log(`decompress gas=${gasEstimate.toString()} (no gas price available)`);
+      }
+      
       // Convert both to Buffer for byte-by-byte comparison
       // Both should be exactly 128 bytes
       let contractBytes = Buffer.from(contractResult.slice(2), 'hex');

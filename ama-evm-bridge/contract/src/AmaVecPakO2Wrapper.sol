@@ -66,20 +66,5 @@ contract AmaVecPakO2Wrapper {
     function encodeBytes(bytes memory b) external pure returns (bytes memory) {
         return AmaVecPakO2.encodeBytes(b);
     }
-
-    /**
-     * @notice Validate a block using the validator contract
-     * @param header The AMA block header (signer must be 48 bytes compressed G1)
-     * @param expectedHash The expected block hash
-     * @param signatureG2 The BLS signature in G2 (256 bytes uncompressed)
-     * @return isValid True if validation passes
-     */
-    function validateBlock(
-        AmaVecPakO2.AmaHeader calldata header,
-        bytes32 expectedHash,
-        bytes calldata signatureG2
-    ) external view returns (bool) {
-        return validator.validateBlock(header, expectedHash, signatureG2);
-    }
 }
 
