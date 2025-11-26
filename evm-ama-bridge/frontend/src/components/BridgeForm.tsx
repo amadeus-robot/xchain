@@ -32,8 +32,8 @@ export function BridgeForm() {
     }
   }, [chainId]);
 
-  const { writeContract: approveToken, data: approveHash, isPending: isApproving } = useWriteContract();
-  const { writeContract: lockTokens, data: lockHash, isPending: isLocking } = useWriteContract();
+  const { writeContract: approveToken, data: approveHash, isPending: isApproving, error: approveError } = useWriteContract();
+  const { writeContract: lockTokens, data: lockHash, isPending: isLocking, error: lockError } = useWriteContract();
 
   const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({
     hash: approveHash,
@@ -98,18 +98,35 @@ export function BridgeForm() {
     }
   }, [isLockSuccess, lockHash]);
 
+  // Handle approval rejection/error
+  useEffect(() => {
+    if (approveError) {
+      console.error('Approve transaction rejected or failed:', approveError);
+      setStep('input');
+    }
+  }, [approveError]);
+
+  // Handle bridge rejection/error
+  useEffect(() => {
+    if (lockError) {
+      console.error('Bridge transaction rejected or failed:', lockError);
+      setStep('input');
+    }
+  }, [lockError]);
+
   const handleApprove = async () => {
     if (!amount || !selectedToken.address) return;
 
     try {
-      const amountInWei = parseUnits(amount, selectedToken.decimals);
+      // Approve maximum amount to avoid future approvals
+      const maxAmount = BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
       setStep('approve');
       
-      approveToken({
+      await approveToken({
         address: selectedToken.address as `0x${string}`,
         abi: ERC20ABI,
         functionName: 'approve',
-        args: [bridgeContractAddress as `0x${string}`, amountInWei],
+        args: [bridgeContractAddress as `0x${string}`, maxAmount],
       });
     } catch (error) {
       console.error('Approve error:', error);
@@ -123,7 +140,7 @@ export function BridgeForm() {
     try {
       const amountInWei = parseUnits(amount, selectedToken.decimals);
       
-      lockTokens({
+      await lockTokens({
         address: bridgeContractAddress as `0x${string}`,
         abi: TokenLockABI,
         functionName: 'lock',
