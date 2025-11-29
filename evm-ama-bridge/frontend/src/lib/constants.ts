@@ -25,12 +25,6 @@ export const CHAIN_CONFIGS: { [key: number]: ChainConfig } = {
         symbol: 'USDT',
         name: 'Tether USD',
         decimals: 6
-      },
-      {
-        address: process.env.NEXT_PUBLIC_ETH_USDC_ADDRESS || '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-        symbol: 'USDC',
-        name: 'USD Coin',
-        decimals: 6
       }
     ]
   },
@@ -46,12 +40,6 @@ export const CHAIN_CONFIGS: { [key: number]: ChainConfig } = {
         symbol: 'USDT',
         name: 'Tether USD',
         decimals: 18
-      },
-      {
-        address: process.env.NEXT_PUBLIC_BSC_USDC_ADDRESS || '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
-        symbol: 'USDC',
-        name: 'USD Coin',
-        decimals: 18
       }
     ]
   },
@@ -66,12 +54,6 @@ export const CHAIN_CONFIGS: { [key: number]: ChainConfig } = {
         address: process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
         symbol: 'USDC',
         name: 'USD Coin',
-        decimals: 6
-      },
-      {
-        address: process.env.NEXT_PUBLIC_BASE_USDbC_ADDRESS || '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA',
-        symbol: 'USDbC',
-        name: 'USD Base Coin',
         decimals: 6
       }
     ]
