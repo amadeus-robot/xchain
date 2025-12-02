@@ -14,6 +14,7 @@
 import { ethers } from 'ethers';
 import LockContractAbi from './abi/LockContractAbi.json';
 import { from_b58, build_tx, to_b58 } from './utils/utils';
+import { canonicalSerialize } from './utils/vanillaser';
 
 /**
  * Decode logs from a transaction receipt
@@ -86,6 +87,91 @@ async function decodeLogs(receipt: ethers.TransactionReceipt | null, abi?: ether
 	});
 
 	return decodedLogs;
+}
+
+/**
+ * Generate proof data for Ethereum transaction verification
+ * This proof contains all necessary data for AMA to verify the transaction on-chain
+ * @param tx - Transaction object
+ * @param receipt - Transaction receipt
+ * @param block - Block object
+ * @param lockedEvent - The locked event data extracted from logs
+ * @returns Proof data object
+ */
+async function generateProof(
+	tx: ethers.TransactionResponse,
+	receipt: ethers.TransactionReceipt | null,
+	block: ethers.Block | null,
+	lockedEvent: any
+): Promise<any> {
+	if (!receipt || !block) {
+		throw new Error('Receipt and block are required for proof generation');
+	}
+
+	// Serialize receipt data
+	const receiptData = {
+		status: receipt.status,
+		blockNumber: receipt.blockNumber.toString(),
+		blockHash: receipt.blockHash,
+		transactionHash: receipt.hash,
+		transactionIndex: receipt.index,
+		from: receipt.from,
+		to: receipt.to,
+		gasUsed: receipt.gasUsed.toString(),
+		cumulativeGasUsed: receipt.cumulativeGasUsed.toString(),
+		logs: receipt.logs.map((log) => ({
+			address: log.address,
+			topics: log.topics,
+			data: log.data,
+			index: log.index,
+			blockNumber: log.blockNumber.toString(),
+			blockHash: log.blockHash,
+			transactionHash: log.transactionHash,
+			transactionIndex: log.transactionIndex,
+		})),
+		logsBloom: receipt.logsBloom,
+	};
+
+	// Serialize block data
+	const blockData = {
+		number: block.number.toString(),
+		hash: block.hash,
+		parentHash: block.parentHash,
+		timestamp: block.timestamp.toString(),
+		gasLimit: block.gasLimit.toString(),
+		gasUsed: block.gasUsed.toString(),
+		miner: block.miner,
+		extraData: block.extraData,
+		transactionsRoot: (block as any).transactionsRoot || null,
+		receiptsRoot: (block as any).receiptsRoot || null,
+		stateRoot: (block as any).stateRoot || null,
+	};
+
+	// Serialize transaction data
+	const txData = {
+		hash: tx.hash,
+		from: tx.from,
+		to: tx.to,
+		value: tx.value.toString(),
+		gasLimit: tx.gasLimit.toString(),
+		gasPrice: tx.gasPrice?.toString(),
+		maxFeePerGas: tx.maxFeePerGas?.toString(),
+		maxPriorityFeePerGas: tx.maxPriorityFeePerGas?.toString(),
+		nonce: tx.nonce,
+		data: tx.data,
+		chainId: tx.chainId?.toString(),
+	};
+
+	// Create proof object with all necessary data for verification
+	const proof = {
+		proofType: 'ethereum_receipt_proof',
+		transaction: txData,
+		receipt: receiptData,
+		block: blockData,
+		lockedEvent: lockedEvent,
+	};
+
+	return proof;
 }
 
 export default {
@@ -167,6 +253,29 @@ export default {
 				// Get transaction receipt for additional data
 				const receipt = await provider.getTransactionReceipt(txhash);
 
+				if (!receipt) {
+					return new Response(
+						JSON.stringify({ error: 'Transaction receipt not found' }),
+						{
+							status: 404,
+							headers: { 'Content-Type': 'application/json', ...corsHeaders },
+						}
+					);
+				}
+
+				// Get block data for proof generation
+				const block = await provider.getBlock(receipt.blockNumber);
+
+				if (!block) {
+					return new Response(
+						JSON.stringify({ error: 'Block not found' }),
+						{
+							status: 404,
+							headers: { 'Content-Type': 'application/json', ...corsHeaders },
+						}
+					);
+				}
+
 				// Decode logs using the local ABI
 				const decodedLogs = await decodeLogs(receipt, LockContractAbi as ethers.InterfaceAbi);
 
@@ -206,10 +315,31 @@ export default {
 					(env as { SEED?: string }).SEED as string
 				);
 				
-				console.log(to_b58(packedTx), "+++++");
+				// Generate proof for the transaction
+				const proof = await generateProof(tx, receipt, block, lockedEvents[0]);
+				
+				// Serialize proof data
+				const proofData = {
+					proof: proof,
+					txHash: txhash,
+				};
+				const proofSerialized = canonicalSerialize(proofData);
+				
+				return new Response(
+					JSON.stringify(proofData),
+					{
+						status: 200,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					}
+				);
+
+				// console.log(to_b58(packedTx), "+++++");
+				// console.log('Proof generated for tx:', txhash);
+				
 				// Submit packed transaction to the API
 				let submitResponse;
 				try {
+					// Submit transaction
 					submitResponse = await fetch(`${(env as { API_HOST?: string }).API_HOST}/api/tx/submit_and_wait`, {
 						method: 'POST',
 						headers: {
@@ -220,21 +350,63 @@ export default {
 
 					const submitResult = await submitResponse.json();
 					console.log(submitResult, "+++++");
-					return new Response(
-						JSON.stringify({
-							success: true,
-							txhash: txhash,
-							lockedEvents: lockedEvents,
-							submittedTx: {
-								status: submitResponse.status,
-								response: submitResult,
+					
+					// Submit proof to AMA API
+					let proofResponse;
+					try {
+						proofResponse = await fetch(`${(env as { API_HOST?: string }).API_HOST}/api/proof/submit`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/octet-stream',
 							},
-						}),
-						{
-							status: 200,
-							headers: { 'Content-Type': 'application/json', ...corsHeaders },
-						}
-					);
+							body: proofSerialized,
+						});
+
+						const proofResult = await proofResponse.json();
+						console.log('Proof submitted:', proofResult);
+						
+						return new Response(
+							JSON.stringify({
+								success: true,
+								txhash: txhash,
+								lockedEvents: lockedEvents,
+								submittedTx: {
+									status: submitResponse.status,
+									response: submitResult,
+								},
+								submittedProof: {
+									status: proofResponse.status,
+									response: proofResult,
+								},
+							}),
+							{
+								status: 200,
+								headers: { 'Content-Type': 'application/json', ...corsHeaders },
+							}
+						);
+					} catch (proofError) {
+						console.error('Failed to submit proof:', proofError);
+						// Still return success for transaction submission even if proof fails
+						return new Response(
+							JSON.stringify({
+								success: true,
+								txhash: txhash,
+								lockedEvents: lockedEvents,
+								submittedTx: {
+									status: submitResponse.status,
+									response: submitResult,
+								},
+								proofError: {
+									error: 'Failed to submit proof',
+									message: proofError instanceof Error ? proofError.message : 'Unknown error',
+								},
+							}),
+							{
+								status: 200,
+								headers: { 'Content-Type': 'application/json', ...corsHeaders },
+							}
+						);
+					}
 				} catch (submitError) {
 					return new Response(
 						JSON.stringify({
