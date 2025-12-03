@@ -17,11 +17,11 @@ export const CHAIN_CONFIGS: { [key: number]: ChainConfig } = {
   1: {
     chainId: 1,
     name: 'Ethereum',
-    bridgeContract: process.env.NEXT_PUBLIC_ETH_BRIDGE_CONTRACT || '0x9bA6287bFe540674eEB71d7fc8A5Ca25103e19B1',
+    bridgeContract: '0x14B36Cf405592eA2354f896d6f9568c01577FdBe',
     explorerUrl: 'https://etherscan.io',
     tokens: [
       {
-        address: process.env.NEXT_PUBLIC_ETH_USDT_ADDRESS || '0xdac17f958d2ee523a2206206994597c13d831ec7',
+        address: '0xdac17f958d2ee523a2206206994597c13d831ec7',
         symbol: 'USDT',
         name: 'Tether USD',
         decimals: 6

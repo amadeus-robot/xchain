@@ -82,6 +82,7 @@ export function BridgeForm() {
         },
         body: JSON.stringify({
           txhash: lockHash,
+          network: currentChainConfig?.name
         }),
       })
         .then(response => response.json())
