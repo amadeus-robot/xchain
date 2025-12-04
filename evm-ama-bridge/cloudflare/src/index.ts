@@ -13,8 +13,7 @@
 
 import { ethers } from 'ethers';
 import LockContractAbi from './abi/LockContractAbi.json';
-import { from_b58, build_tx, to_b58 } from './utils/utils';
-import { canonicalSerialize } from './utils/vanillaser';
+import { ProofGenerator } from './utils/proofGenerator';
 
 /**
  * Decode logs from a transaction receipt
@@ -22,7 +21,7 @@ import { canonicalSerialize } from './utils/vanillaser';
  * @param abi - Optional ABI array to decode events. If not provided, logs will be returned as raw data
  * @returns Array of decoded log events
  */
-async function decodeLogs(receipt: ethers.TransactionReceipt | null, abi?: ethers.InterfaceAbi): Promise<any[]> {
+async function decodeLogs(receipt: ethers.providers.TransactionReceipt | null, abi?: any): Promise<any[]> {
 	if (!receipt || !receipt.logs || receipt.logs.length === 0) {
 		return [];
 	}
@@ -30,10 +29,10 @@ async function decodeLogs(receipt: ethers.TransactionReceipt | null, abi?: ether
 	const decodedLogs: any[] = [];
 
 	// If ABI is provided, create an interface for decoding
-	let iface: ethers.Interface | null = null;
+	let iface: any | null = null;
 	if (abi) {
 		try {
-			iface = new ethers.Interface(abi);
+			iface = new ethers.utils.Interface(abi);
 		} catch (err) {
 			console.error('Failed to create interface from ABI:', err);
 			return decodedLogs;
@@ -45,7 +44,6 @@ async function decodeLogs(receipt: ethers.TransactionReceipt | null, abi?: ether
 			address: log.address,
 			topics: log.topics,
 			data: log.data,
-			index: log.index,
 			blockNumber: log.blockNumber,
 			blockHash: log.blockHash,
 			transactionHash: log.transactionHash,
@@ -89,91 +87,6 @@ async function decodeLogs(receipt: ethers.TransactionReceipt | null, abi?: ether
 	return decodedLogs;
 }
 
-/**
- * Generate proof data for Ethereum transaction verification
- * This proof contains all necessary data for AMA to verify the transaction on-chain
- * @param tx - Transaction object
- * @param receipt - Transaction receipt
- * @param block - Block object
- * @param lockedEvent - The locked event data extracted from logs
- * @returns Proof data object
- */
-async function generateProof(
-	tx: ethers.TransactionResponse,
-	receipt: ethers.TransactionReceipt | null,
-	block: ethers.Block | null,
-	lockedEvent: any
-): Promise<any> {
-	if (!receipt || !block) {
-		throw new Error('Receipt and block are required for proof generation');
-	}
-
-	// Serialize receipt data
-	const receiptData = {
-		status: receipt.status,
-		blockNumber: receipt.blockNumber.toString(),
-		blockHash: receipt.blockHash,
-		transactionHash: receipt.hash,
-		transactionIndex: receipt.index,
-		from: receipt.from,
-		to: receipt.to,
-		gasUsed: receipt.gasUsed.toString(),
-		cumulativeGasUsed: receipt.cumulativeGasUsed.toString(),
-		logs: receipt.logs.map((log) => ({
-			address: log.address,
-			topics: log.topics,
-			data: log.data,
-			index: log.index,
-			blockNumber: log.blockNumber.toString(),
-			blockHash: log.blockHash,
-			transactionHash: log.transactionHash,
-			transactionIndex: log.transactionIndex,
-		})),
-		logsBloom: receipt.logsBloom,
-	};
-
-	// Serialize block data
-	const blockData = {
-		number: block.number.toString(),
-		hash: block.hash,
-		parentHash: block.parentHash,
-		timestamp: block.timestamp.toString(),
-		gasLimit: block.gasLimit.toString(),
-		gasUsed: block.gasUsed.toString(),
-		miner: block.miner,
-		extraData: block.extraData,
-		transactionsRoot: (block as any).transactionsRoot || null,
-		receiptsRoot: (block as any).receiptsRoot || null,
-		stateRoot: (block as any).stateRoot || null,
-	};
-
-	// Serialize transaction data
-	const txData = {
-		hash: tx.hash,
-		from: tx.from,
-		to: tx.to,
-		value: tx.value.toString(),
-		gasLimit: tx.gasLimit.toString(),
-		gasPrice: tx.gasPrice?.toString(),
-		maxFeePerGas: tx.maxFeePerGas?.toString(),
-		maxPriorityFeePerGas: tx.maxPriorityFeePerGas?.toString(),
-		nonce: tx.nonce,
-		data: tx.data,
-		chainId: tx.chainId?.toString(),
-	};
-
-	// Create proof object with all necessary data for verification
-	const proof = {
-		proofType: 'ethereum_receipt_proof',
-		transaction: txData,
-		receipt: receiptData,
-		block: blockData,
-		lockedEvent: lockedEvent,
-	};
-
-	return proof;
-}
-
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
 		// CORS configuration
@@ -198,17 +111,21 @@ export default {
 				// Parse the request body
 				const contentType = request.headers.get('content-type') || '';
 				let txhash: string;
+				let network: string;
 
 				if (contentType.includes('application/json')) {
-					const body = await request.json() as { txhash?: string };
+					const body = await request.json() as { txhash?: string; network?: string };
 					txhash = body.txhash || '';
+					network = body.network || '';
 				} else if (contentType.includes('application/x-www-form-urlencoded')) {
 					const formData = await request.formData();
 					txhash = formData.get('txhash')?.toString() || '';
+					network = formData.get('network')?.toString() || '';
 				} else {
 					// Try to parse as JSON anyway
-					const body = await request.json() as { txhash?: string };
+					const body = await request.json() as { txhash?: string; network?: string };
 					txhash = body.txhash || '';
+					network = body.network || '';
 				}
 
 				// Validate txhash
@@ -222,8 +139,34 @@ export default {
 					);
 				}
 
+				// Validate network
+				if (!network || network.trim() === '') {
+					return new Response(
+						JSON.stringify({ error: 'network is required. Valid values: eth, bsc, base' }),
+						{
+							status: 400,
+							headers: { 'Content-Type': 'application/json', ...corsHeaders },
+						}
+					);
+				}
+
+				// Validate network value
+				const validNetworks = ['ethereum', 'bsc', 'base'];
+				const normalizedNetwork = network.toLowerCase();
+				if (!validNetworks.includes(normalizedNetwork)) {
+					return new Response(
+						JSON.stringify({ 
+							error: `Invalid network. Valid values are: ${validNetworks.join(', ')}` 
+						}),
+						{
+							status: 400,
+							headers: { 'Content-Type': 'application/json', ...corsHeaders },
+						}
+					);
+				}
+
 				// Validate txhash format (should be a valid hex string)
-				if (!ethers.isHexString(txhash)) {
+				if (!ethers.utils.isHexString(txhash)) {
 					return new Response(
 						JSON.stringify({ error: 'Invalid transaction hash format' }),
 						{
@@ -233,9 +176,12 @@ export default {
 					);
 				}
 
-				// Get RPC URL from environment or use default public RPC
-				const rpcUrl = (env as { RPC_URL?: string }).RPC_URL || 'https://eth-sepolia.g.alchemy.com/v2/SurwjWo5gaGSMhdiImAp_';
-				const provider = new ethers.JsonRpcProvider(rpcUrl);
+				// Get RPC URL based on network
+				const networkUpper = network.toUpperCase();
+				const envRpcKey = `RPC_URL_${networkUpper}`;
+				const rpcUrl = (env as { [key: string]: string })[envRpcKey];
+
+				const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
 
 				// Fetch transaction data
 				const tx = await provider.getTransaction(txhash);
@@ -277,7 +223,7 @@ export default {
 				}
 
 				// Decode logs using the local ABI
-				const decodedLogs = await decodeLogs(receipt, LockContractAbi as ethers.InterfaceAbi);
+				const decodedLogs = await decodeLogs(receipt, LockContractAbi);
 
 				// Filter for 'Locked' events and extract specific arguments
 				const lockedEvents = decodedLogs
@@ -304,26 +250,21 @@ export default {
 				}
 
 				const realAmount = Number(lockedEvents[0].amount) / 10**6;
-				const packedTx = build_tx(
-					"Coin", 
-					"transfer", 
-					[
-						from_b58(lockedEvents[0].targetAddress), 
-						Number(realAmount*1000000000).toString(), 
-						"AMA"
-					], 
-					(env as { SEED?: string }).SEED as string
-				);
 				
+				const proofGenerator = new ProofGenerator(rpcUrl);
+
 				// Generate proof for the transaction
-				const proof = await generateProof(tx, receipt, block, lockedEvents[0]);
+				const proof = await proofGenerator.generateTxReceiptProof(txhash);
 				
+				
+
 				// Serialize proof data
 				const proofData = {
+					realAmount: realAmount,
 					proof: proof,
 					txHash: txhash,
+					network: normalizedNetwork,
 				};
-				const proofSerialized = canonicalSerialize(proofData);
 				
 				return new Response(
 					JSON.stringify(proofData),
@@ -332,94 +273,6 @@ export default {
 						headers: { 'Content-Type': 'application/json', ...corsHeaders },
 					}
 				);
-
-				// console.log(to_b58(packedTx), "+++++");
-				// console.log('Proof generated for tx:', txhash);
-				
-				// Submit packed transaction to the API
-				let submitResponse;
-				try {
-					// Submit transaction
-					submitResponse = await fetch(`${(env as { API_HOST?: string }).API_HOST}/api/tx/submit_and_wait`, {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/octet-stream',
-						},
-						body: packedTx,
-					});
-
-					const submitResult = await submitResponse.json();
-					console.log(submitResult, "+++++");
-					
-					// Submit proof to AMA API
-					let proofResponse;
-					try {
-						proofResponse = await fetch(`${(env as { API_HOST?: string }).API_HOST}/api/proof/submit`, {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/octet-stream',
-							},
-							body: proofSerialized,
-						});
-
-						const proofResult = await proofResponse.json();
-						console.log('Proof submitted:', proofResult);
-						
-						return new Response(
-							JSON.stringify({
-								success: true,
-								txhash: txhash,
-								lockedEvents: lockedEvents,
-								submittedTx: {
-									status: submitResponse.status,
-									response: submitResult,
-								},
-								submittedProof: {
-									status: proofResponse.status,
-									response: proofResult,
-								},
-							}),
-							{
-								status: 200,
-								headers: { 'Content-Type': 'application/json', ...corsHeaders },
-							}
-						);
-					} catch (proofError) {
-						console.error('Failed to submit proof:', proofError);
-						// Still return success for transaction submission even if proof fails
-						return new Response(
-							JSON.stringify({
-								success: true,
-								txhash: txhash,
-								lockedEvents: lockedEvents,
-								submittedTx: {
-									status: submitResponse.status,
-									response: submitResult,
-								},
-								proofError: {
-									error: 'Failed to submit proof',
-									message: proofError instanceof Error ? proofError.message : 'Unknown error',
-								},
-							}),
-							{
-								status: 200,
-								headers: { 'Content-Type': 'application/json', ...corsHeaders },
-							}
-						);
-					}
-				} catch (submitError) {
-					return new Response(
-						JSON.stringify({
-							error: 'Failed to submit transaction',
-							message: submitError instanceof Error ? submitError.message : 'Unknown error',
-							lockedEvents: lockedEvents,
-						}),
-						{
-							status: 500,
-							headers: { 'Content-Type': 'application/json', ...corsHeaders },
-						}
-					);
-				}
 			} catch (error) {
 				// Handle different types of errors
 				let status = 500;
