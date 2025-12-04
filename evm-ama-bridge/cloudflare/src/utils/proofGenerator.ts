@@ -81,18 +81,10 @@ export class ProofGenerator {
 
   async generateTxReceiptProof(
     txHash: string,
+    receipt: ethers.providers.TransactionReceipt,
   ): Promise<{ proof: string[]; root: string; index: Uint8Array<ArrayBufferLike>; value: string; event: string }> {
     // assume event attached will be taken from index = 0 if exists
     const eventIndex = 0
-    const receipt = await this.provider.getTransactionReceipt(txHash);
-    
-    console.log('⬅️ found receipt for tx: ', txHash)
-    console.log('🔃 parsed receipt to hex form')
-    const block = await this.provider.getBlock(receipt.blockNumber);
-    
-    console.log('⬅️ found block for receipt: ', block.hash, block.number)
-    console.log(`🔃 fetch sibling tx receipts: ${block.transactions.length}`)
-    
     let siblings: ethers.providers.TransactionReceipt[] = []
     
     try {
@@ -110,12 +102,6 @@ export class ProofGenerator {
     // Ensure we have enough receipts to build the proof
     if (siblings.length === 0) {
       throw new Error('Failed to fetch any sibling transaction receipts');
-    }
-    
-    // Verify we have all receipts
-    const expectedCount = block.transactions.length;
-    if (siblings.length < expectedCount) {
-      console.warn(`⚠️ Warning: Only fetched ${siblings.length} out of ${expectedCount} receipts. Proof may be incomplete.`);
     }
     
     const proofOutput = await ProofGenerator.calculateReceiptProof(

@@ -248,19 +248,13 @@ export default {
 						}
 					);
 				}
-
-				const realAmount = Number(lockedEvents[0].amount) / 10**6;
 				
 				const proofGenerator = new ProofGenerator(rpcUrl);
 
 				// Generate proof for the transaction
-				const proof = await proofGenerator.generateTxReceiptProof(txhash);
-				
-				
-
+				const proof = await proofGenerator.generateTxReceiptProof(txhash, receipt);
 				// Serialize proof data
 				const proofData = {
-					realAmount: realAmount,
 					proof: proof,
 					txHash: txhash,
 					network: normalizedNetwork,
