@@ -252,7 +252,7 @@ export default {
 				const proofGenerator = new ProofGenerator(rpcUrl);
 
 				// Generate proof for the transaction
-				const proof = await proofGenerator.generateTxReceiptProof(txhash, receipt);
+				const proof = await proofGenerator.generateTxReceiptProof(receipt);
 				// Serialize proof data
 				const proofData = {
 					proof: proof,

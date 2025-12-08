@@ -80,7 +80,6 @@ export class ProofGenerator {
   }
 
   async generateTxReceiptProof(
-    txHash: string,
     receipt: ethers.providers.TransactionReceipt,
   ): Promise<{ proof: string[]; root: string; index: Uint8Array<ArrayBufferLike>; value: string; event: string }> {
     // assume event attached will be taken from index = 0 if exists
